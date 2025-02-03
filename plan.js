@@ -26,7 +26,7 @@ async function loadConfig(fileName) {
 }
 
 // use the config file passed as argument if any or the default one
-const config_host = await loadConfig(process.argv[2] || 'config_my.js');
+const config_host = await loadConfig(process.argv[2] || 'config_1.js');
 
 export class Plan {
     #stopped = false;
