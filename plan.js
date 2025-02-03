@@ -91,7 +91,6 @@ export class GoPickUp extends Plan {
                 }
             }
         }
-        //console.log("---- returning true from plan")
         return desire == 'go_pick_up';
     }
 
@@ -170,7 +169,6 @@ async function move(myAgent, current) {
     }
 
     if (current.x != myAgent.x || current.y != myAgent.y) {
-        //console.log('desync', current.x, current.y, myAgent.x, myAgent.y);
         await myAgent.client.putdown();
         await myAgent.client.pickup();
         throw new Error('desync');
