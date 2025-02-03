@@ -15,4 +15,4 @@ First of all, we need to install the required dependencies. To do so, run the fo
 ### 2. Execute our agent
 For the execution of the code, run the following command:
 
-```node my_bdi_control_loop.js``` 
+```node bdi_control_loop.js``` 
