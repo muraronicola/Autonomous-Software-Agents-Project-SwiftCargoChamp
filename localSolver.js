@@ -24,7 +24,7 @@ async function postRequest (pddlDomain, pddlProblem) {
         throw new Error( 'pddlProblem is not a string' );
 
     
-    //console.log( 'POSTING planning request to', HOST + PATH );
+    console.log( 'POSTING planning request to', HOST + PATH );
     
     var res = await fetch( HOST + PATH, {
         method: "POST",
@@ -40,10 +40,10 @@ async function postRequest (pddlDomain, pddlProblem) {
 
     var json = await res.json();
     
-    // //console.log(res);
+    // console.log(res);
 
     if ( ! json.result ) {
-        //console.log(res);
+        console.log(res);
         throw new Error( `No value "result" from ${ HOST + PATH } ` + res );
     }
 
@@ -55,7 +55,7 @@ async function getResult (responseCheckUrl) {
 
     while (true) {
 
-        //console.log('PENDING planning result from', responseCheckUrl);
+        console.log('PENDING planning result from', responseCheckUrl);
 
         let res = await fetch(responseCheckUrl, {
             method: "GET",
@@ -79,22 +79,22 @@ async function getResult (responseCheckUrl) {
 
     }
 
-    // //console.log(json);
-    // //console.log(json.plans[0].result);
-    // //console.log(json.plans[0].result.plan);
+    // console.log(json);
+    // console.log(json.plans[0].result);
+    // console.log(json.plans[0].result.plan);
 
     if ( json.status != 'ok' ) {
-        //console.log(json);
+        console.log(json);
         throw new Error( `Invalid 'status' in response body from ${responseCheckUrl}` );
     }
     
     if ( ! json.result ) {
-        //console.log(json);
+        console.log(json);
         throw new Error( `No 'result' in response body from ${responseCheckUrl}` );
     }
     
     if ( ! 'stdout' in json.result ) {
-        //console.log(json);
+        console.log(json);
         throw new Error( `No 'result.stdout' in response from ${responseCheckUrl}` );
     }
 
@@ -113,7 +113,7 @@ async function parsePlan (json) {
     // PARSING plan from /package/dual-bfws-ffparser/solve
     if ( json.result.stdout.split('\n').includes(' --- OK.') ) {
 
-        //console.log( 'Using parser for /package/dual-bfws-ffparser/solve');
+        console.log( 'Using parser for /package/dual-bfws-ffparser/solve');
 
         lines = lines.map( line => line.replace('(','').replace(')','').split(' ') );
         lines = lines.slice(0,-1);
@@ -122,7 +122,7 @@ async function parsePlan (json) {
     // PARSING plan from /package/delfi/solve
     else if ( json.result.call.split(' ').includes('delfi') && json.result.stdout.split('\n').includes('Solution found.') ) {
         
-        //console.log( 'Using parser for /package/delfi/solve');
+        console.log( 'Using parser for /package/delfi/solve');
 
         lines = lines.map( line => line.replace('(','').replace(')','').split(' ') );
         lines = lines.slice(0,-1);
@@ -131,7 +131,7 @@ async function parsePlan (json) {
     // PARSING plan from /package/enhsp-2020/solve
     else if ( lines.includes('Problem Solved') ) {
 
-        //console.log( 'Using parser for /package/enhsp-2020/solve');
+        console.log( 'Using parser for /package/enhsp-2020/solve');
 
         let startIndex = lines.indexOf('Problem Solved') + 1;
         let endIndex = lines.findIndex( (line) => line.includes('Plan-Length') );
@@ -143,7 +143,7 @@ async function parsePlan (json) {
     // PARSING plan from /package/optic/solve
     else if ( json.result.call.split(' ').includes('optic') && lines.includes(';;;; Solution Found') ) {
         
-        //console.log( 'Using parser for /package/optic/solve');
+        console.log( 'Using parser for /package/optic/solve');
         
         let startIndex = lines.indexOf(';;;; Solution Found') + 1;
         lines = lines.slice( startIndex + 3 );
@@ -154,18 +154,18 @@ async function parsePlan (json) {
 
     // ERROR
     else {
-        //console.log(json);
-        //console.error( 'Plan not found!' )
+        console.log(json);
+        console.error( 'Plan not found!' )
         return;
     }
 
     var plan = []
 
-    //console.log( 'Plan found:' )
+    console.log( 'Plan found:' )
 
     for ( let /**@type {string}*/ line of lines ) {
 
-        //console.log('- ' + line);
+        console.log('- ' + line);
 
         // var number = line.shift()
         var action = line.shift()

@@ -5,9 +5,7 @@ import { GoPickUp, GoToDelivery, Explore } from "./plan.js";
 
 async function loadConfig(fileName) {
     try {
-        // Dynamically import the file
         const config = await import(`./${fileName}`);
-        //console.log('Config loaded:', config.default);
         return config.default;
     } catch (error) {
         console.error('Error loading config:', error);
@@ -15,7 +13,7 @@ async function loadConfig(fileName) {
 }
 
 // use the config file passed as argument if any or the default one
-const config_host = await loadConfig(process.argv[2] || 'config_my.js');
+const config_host = await loadConfig(process.argv[2] || 'config_1.js');
 
 const client = new DeliverooApi(config_host.host, config_host.token)
 client.onConnect(() => console.log("socket", client.socket.id));
@@ -26,31 +24,18 @@ client.socket.once('config', (_config) => {
     config = _config;
 });
 
-let update_every = 1000;
-let last_update = Date.now()
-let contatore = 0
 /**
  * Belief revision function
  */
 const passkey = 'SwiftCargoChamp';
 const myAgent = new Agent(client);
-client.onYou(({ id, name, x, y, score }) => { //forse posso toglire async
+client.onYou(({ id, name, x, y, score }) => {
     myAgent.id = id
     myAgent.a_name = name
     myAgent.x = Math.round(x)
     myAgent.y = Math.round(y)
     myAgent.score = score
-    /*
-    let my_intention = '{"intention":"null"}'
-    if (myAgent.intention_queue.length > 0) {
-        my_intention = JSON.stringify(myAgent.intention_queue[0])
-    }
-    console.log("I'm sending ", `${passkey}-ack-${myAgent.x}-${myAgent.y}-${my_intention}`)
-    console.log(contatore)
-    contatore++
-    console.log("")
-    myAgent.sendToAllies(`${passkey}-ack-${myAgent.x}-${myAgent.y}-${my_intention}`); //forse posso toglire await
-    */
+
     myAgent.sendToAllies(`${passkey}-ack-${myAgent.x}-${myAgent.y}`);
 })
 
@@ -72,21 +57,8 @@ myAgent.plans.push(new Explore())
  */
 client.socket.once('map', (width, height, tiles) => {
     myAgent.map = new DeliverooMap(width, height, tiles)
-    //console.log('map', width, height)
+    console.log('map', width, height)
 });
-
-async function print_intentions(intentions) {
-    //console.log('intentions:[');
-    for (const i of intentions) {
-        if (i.desire == 'go_pick_up') {
-            //console.log(i.desire + ' ' + i.args[0].id);
-        }
-        else {
-            //console.log(i.desire);
-        }
-    }
-    //console.log(']\n');
-}
 
 client.onAgentsSensing(sensed_agents => {
     if (!myAgent.active)
@@ -115,7 +87,6 @@ client.onParcelsSensing(async (parcels) => {
  * Message format: passkey-[action]-[optional_data]
  */
 client.onMsg(async (id, _, msg) => {
-    //console.log("client.onMsg", id, msg)
     let split = msg.split('-');
     if (split[0] == passkey) {
         switch (split[1]) {
@@ -153,91 +124,55 @@ client.onMsg(async (id, _, msg) => {
                 myAgent.allies[id].intention = intention;
                 console.log("client.onMsg: update-intention", intention)
 
-                //qui devo controllare che esista il campo desire??
                 switch (intention.desire) {
                     case 'go_pick_up':
-                        console.log("[LOG OP] Il socio va al pick up")
                         let parcel = intention.args[0];
-                        //console.log("[msg_recieved]")
 
                         if (myAgent.intention_queue.length > 0 && myAgent.intention_queue[0].desire == 'go_pick_up') {
-                            //console.log("\n\n[Sono in client.onMsg]")
-                            //console.log("WE HAVE THE SAME INTETION, TO GO TO THE SAME PARCEL")
-                            //console.log(myAgent.x, myAgent.y)
-                            //console.log(myAgent.allies[id].x, myAgent.allies[id].y)
-                            //console.log(parcel.x, parcel.y)
-                            //console.log("id parcel 1 ", myAgent.intention_queue[0].args[0].id)
-                            //console.log("id parcel 2 ", parcel.id)
+
                             if (myAgent.intention_queue[0].args[0].id == parcel.id && parcel.carriedBy == null)
                                 if (!isNaN(myAgent.allies[id].x) && !isNaN(myAgent.allies[id].y) && !isNaN(parcel.x) && !isNaN(parcel.y)) {
                                     let my_plan = await myAgent.map.bfs(myAgent.x, myAgent.y, 'C', parcel.x, parcel.y);
                                     let allay_plan = await myAgent.map.bfs(myAgent.allies[id].x, myAgent.allies[id].y, 'C', parcel.x, parcel.y);
-                                    //console.log("All intention queue", myAgent.intention_queue)
-                                    //console.log("my_plan", my_plan)
-                                    //console.log("allay_plan", allay_plan)
                                     if (my_plan != null && allay_plan != null) {
                                         if (my_plan.length > allay_plan.length) {
-                                            //console.log("ANNULLO KING")
                                             myAgent.intention_queue[0].stop();
                                             myAgent.intention_queue.shift();
                                         } else {
-                                            //console.log("CONTINUO KING")
+                                            //console.log("CONTINUO")
                                         }
                                     } else {
                                         if (my_plan == null && allay_plan != null) {
-                                            //console.log("Io sono nullo")
-                                            //console.log("ANNULLO KING")
                                             myAgent.intention_queue[0].stop();
                                             myAgent.intention_queue.shift();
                                         } else if (allay_plan == null && my_plan != null) {
                                             //console.log("Lui è nullo")
-                                            //console.log("CONTINUO KING")
+                                            //console.log("CONTINUO")
                                         }
-
-                                        //console.log("I piani sono nulli.......")
-                                        //console.log("my_plan", my_plan)
-                                        //console.log("allay_plan", allay_plan)
                                     }
-                                    //console.log("------------------------------\n\n\n\n")
                                 }
                         }
                         break;
 
                     case 'go_to_delivery':
-                        console.log("[LOG OP] Il socio va al delivery")
-                        //if(myAgent.intention_queue.length > 0 && myAgent.intention_queue[0].desire == 'go_to_delivery')
-                        // for now do nothing
-                        ////console.log("[LOG OP] Il socio sta andando a consegnare")
                         if (myAgent.intention_queue.length > 0 && myAgent.intention_queue[0].desire == 'go_to_delivery') {
                             let my_plan = await myAgent.map.bfs(myAgent.x, myAgent.y, 'D');
-                            //console.log("plan_my", my_plan)
                             let allay_plan = await myAgent.map.bfs(myAgent.allies[id].x, myAgent.allies[id].y, 'D');
-                            //console.log("plan_ally", allay_plan)
                             let my_delivery = my_plan[my_plan.length - 1]
                             let allay_delivery = allay_plan[allay_plan.length - 1]
 
                             if (my_plan != null && allay_plan != null && my_delivery != null && allay_delivery != null) {
-                                //console.log(myAgent.x, myAgent.y)
-                                //console.log(myAgent.allies[id].x, myAgent.allies[id].y)
-                                //console.log(my_delivery.x, my_delivery.y)
 
                                 if (my_delivery.x == allay_delivery.x && my_delivery.y == allay_delivery.y && myAgent.id > id) {
-                                    // we have the same intention, proceed only if the closest agent
-                                    //console.log("WE HAVE THE SAME INTETION, TO GO TO THE SAME DELIVERY")
 
                                     if (my_plan.length == allay_plan.length) {
-                                        //console.log("All intention queue", myAgent.intention_queue)
                                         myAgent.intention_queue[0].stop();
                                         myAgent.intention_queue.shift();
-                                        // TODO: could be problematic for the reconsider function
-                                        //console.log("ANNULLO LA MIA INTENTION, VAI SOCIO")
                                     } else {
-                                        //console.log("CONTINUO LA MIA INTENTION")
+                                        //console.log("CONTINUO")
                                     }
-                                    //throw new Error('stopped');
-                                    //console.log("--------------------\n\n\n\n\n\n\n")
                                 }else{
-                                    //console.log("Si fermerà il socio")
+                                    //console.log("CONTINUO")
                                 }
                             }else{
                                 //console.log("I piani sono nulli.......")
@@ -246,11 +181,6 @@ client.onMsg(async (id, _, msg) => {
                         break;
 
                     case 'explore':
-                        console.log("[LOG OP] Il socio sta esplorando")
-                        //console.log(intention)
-                        // for now do nothing
-                        //IDEE
-                        //ispezionare parti diverse della mappa
                         break;
                 }
                 break;

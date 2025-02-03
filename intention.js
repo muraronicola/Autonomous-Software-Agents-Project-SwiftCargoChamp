@@ -3,11 +3,6 @@ const passkey = 'SwiftCargoChamp';
 export class Intention extends Promise {
     #current_plan;
     stop() {
-        //if (this.#started)
-        //console.log('stopping intention', this.#desire, ...this.#args);
-        //console.log('started', this.#started);
-        //console.log('this.#current_plan', this.#current_plan);
-        //if (this.#current_plan != undefined)
         this.#current_plan.stop();
     }
 
@@ -43,6 +38,7 @@ export class Intention extends Promise {
         msg += JSON.stringify(this);
         return msg;
     }
+
     // Custom toJSON method to include private fields
     toJSON() {
         return {
@@ -71,11 +67,9 @@ export class Intention extends Promise {
                     console.log('plan', plan, 'failed while trying to achieve intention', this.#desire, ...this.#args, 'with error', error);
                 }
             }else{
-                //myAgent.intention_queue.shift();
                 console.log("plan not applicable", plan);
             }
         }
         myAgent.intention_queue.shift();
-        //this.#reject('no plan satisfied the desire ' + this.#desire);
     }
 }

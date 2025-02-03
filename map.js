@@ -56,7 +56,6 @@ export class DeliverooMap {
     }
 
     async getSpawner(allies, agent_x, agent_y) {
-        //let spawner = this.spawners.shift(); //bro.... impara a usare le funzioni di array, non c'è bisogno di fare ste cose (ha fatto tutto copilot)
 
         if (this.spawners.length == 1) {
             let allay_to_spawner = false;
@@ -69,16 +68,12 @@ export class DeliverooMap {
             }
 
             if ((this.spawners[0].x == agent_x && this.spawners[0].y == agent_y) || allay_to_spawner) {
-                //console.log('only one spawner');
-                //find random cell in the map
                 let x = Math.floor(Math.random() * this.width);
                 let y = Math.floor(Math.random() * this.height);
                 while (this.amap[x][y] != 0) {
                     x = Math.floor(Math.random() * this.width);
                     y = Math.floor(Math.random() * this.height);
                 }
-                //console.log('------ random cell', x, y);
-                //console.log("\n\n")
                 return { x: x, y: y };
             }
 
@@ -88,10 +83,6 @@ export class DeliverooMap {
         this.indice_spawners = this.indice_spawners + 1 >= this.spawners.length ? 0 : this.indice_spawners + 1;
 
         let spawner = this.spawners[this.indice_spawners];
-        //let spawner = this.spawners[0]; // only debug
-        //this.spawners.push(spawner);
-        //spawner = { x: 7, y: 2 } //debug
-        //console.log('default spawner', spawner); //debug
 
         if (allies != {}) {
             let no_go = [];
@@ -99,24 +90,19 @@ export class DeliverooMap {
             for (const ally of Object.keys(allies)) {
                 if (allies[ally].intention != undefined && allies[ally].intention.desire == 'explore') {
                     no_go.push({ x: allies[ally].intention.args[0].x, y: allies[ally].intention.args[0].y });
-                    //console.log('no_go_pushed: ', no_go);
                 }
             }
 
             if (no_go.length > 0) {
                 let max_d = 0;
-                //console.log('check distance');
                 for (let spawn of this.spawners) {
                     let d = 0
                     for (let ng of no_go) {
                         d += this.distance(spawn.x, spawn.y, ng.x, ng.y);
-                        //d += this.distance(spawn.x, spawn.y, agent_x, agent_y);
-                        //console.log('check spawn', spawn, 'no_go', ng, 'distance', d);
                     }
                     if (d > max_d && spawn.x != agent_x && spawn.y != agent_y) {
                         max_d = d;
                         spawner = spawn;
-                        //console.log('new best spawner', spawner, 'distance', d);
                     }
                 }
             }
@@ -539,7 +525,6 @@ export class DeliverooMap {
                     if (this.availableParcels[args.id] !== undefined) {
                         console.log('go_pick_up', args.id);
                         args = this.availableParcels[args.id];
-                        //console.log('this.availableParcels[args.id]', this.availableParcels[args.id]);
                         if (args.carriedBy == null) { //Era (args.carriedBy == id || args.carriedBy == null)
                             let toP = await this.bfs(x, y, 'C', args.x, args.y);
                             let toD = await this.bfs(args.x, args.y, 'D');
