@@ -150,9 +150,15 @@ export class GoPickUp extends Plan {
             var p = await localSolver(domain, problem);
         else
             var p = await onlineSolver(domain, problem);
-        await this.executePlan(myAgent, p);
-        this.checkStop();
-        return true;
+
+        if (p != null) { //If the plan is valid execute it
+            await this.executePlan(myAgent, p);
+            await myAgent.client.pickup();
+            this.checkStop();
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -188,10 +194,15 @@ export class GoToDelivery extends Plan {
             var p = await localSolver(domain, problem)
         else
             var p = await onlineSolver(domain, problem);
-        await this.executePlan(myAgent, p);
-        await myAgent.client.putdown();
-        this.checkStop();
-        return true;
+
+        if (p != null) { //If the plan is valid execute it
+            await this.executePlan(myAgent, p);
+            await myAgent.client.pickup();
+            this.checkStop();
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

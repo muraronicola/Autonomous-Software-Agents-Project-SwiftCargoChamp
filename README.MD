@@ -22,7 +22,7 @@ First of all, we need to install the required dependencies. To do so, run the fo
 ### 1.2 Set up the configuration file
 There are two default configuration files in the project, both located in the `./config` folder.
 They contain the `host`, `token`, and `local_solver` of the agent. By default, we use the online solver, so the project can be always be executed (provided an internet connection). 
-By default, the agent will use the `config_1.js` file.
+By default, the agent will use the `./config/config_1.js` file.
 
 
 ### 1.3 Set up the local solver
@@ -36,7 +36,7 @@ https://github.com/AI-Planning/planutils/tree/main/environments/server
 <br>
 
 ## 2. Execute our agent
-For the execution of the code, run the following command:
+For the execution of the code, from the `Autonomous-Software-Agents-Project-SwiftCargoChamp` folder, run the following command:
 
 
 ### 2.1 Default configuration (config_1.js)
@@ -44,4 +44,4 @@ For the execution of the code, run the following command:
 
 
 ### 2.2 Custom configuration (es: config_2.js)
-```node bdi_control_loop.js config_2.js``` 
+```node bdi_control_loop.js ./config/config_2.js``` 
