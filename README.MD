@@ -35,8 +35,7 @@ Unless otherwise specified, the agent will use the `./config/config_1.js` file.
 If you prefer to use a **local solver**, improving the performance of the agent by doing so, set the `local_solver` option to `true` in the configuration file.  
 You can specify the local solver address in the `./PDDL/localSolver.js` file.
 
-We used the **Planutils server**, which is Docker-based. To install it, follow the instructions provided at the following link:  
-[Planutils Server Installation](https://github.com/AI-Planning/planutils/tree/main/environments/server)
+We used the **Planutils server**, which is Docker-based. To install it, follow the instructions provided at the following link: [Planutils Server Installation](https://github.com/AI-Planning/planutils/tree/main/environments/server)
 
 <br>
 
