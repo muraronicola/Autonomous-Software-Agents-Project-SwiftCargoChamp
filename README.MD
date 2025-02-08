@@ -2,8 +2,10 @@
 # Autonomus Software Agents Project - SwiftCargoChamp
 
 This is our project for the course "Autonomous Software Agents"
+<br> <br>
 
 ## Running the Code
+<br>
 
 ## 1. Set up the Project Environment
 We expect that the server is already running, provided the repository given by the professor during the classes.
@@ -27,6 +29,8 @@ By default, the agent will use the `config_1.js` file.
 If you want to use the local solver, you need to set the `local_solver` to `true` in the configuration file.
 The address for the local solver can be specified in the `localSolver.js` file.
 
+
+<br>
 
 ## 2. Execute our agent
 For the execution of the code, run the following command:
