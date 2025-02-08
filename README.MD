@@ -1,47 +1,56 @@
+# Autonomous Software Agents Project - SwiftCargoChamp
 
-# Autonomus Software Agents Project - SwiftCargoChamp
+This is our project for the **"Autonomous Software Agents"** course.
 
-This is our project for the course "Autonomous Software Agents"
-<br> <br>
+<br>
 
 ## Running the Code
-<br>
-
-## 1. Set up the Project Environment
-We expect that the server is already running, provided the repository given by the professor during the classes.
-
-For our part, here are the steps to set up the project environment.
-
-
-### 1.1 Install npm packages
-First of all, we need to install the required dependencies. To do so, run the following command:
-
-```npm install```
-
-
-### 1.2 Set up the configuration file
-There are two default configuration files in the project, both located in the `./config` folder.
-They contain the `host`, `token`, and `local_solver` of the agent. By default, we use the online solver, so the project can be always be executed (provided an internet connection). 
-By default, the agent will use the `./config/config_1.js` file.
-
-
-### 1.3 Set up the local solver
-If you want to use the local solver, you need to set the `local_solver` to `true` in the configuration file.
-The address for the local solver can be specified in the `./PDDL/localSolver.js` file.
-<br>
-We used the plantilus server, based on docker. For installation follow the instructions in the following link:
-https://github.com/AI-Planning/planutils/tree/main/environments/server
-
 
 <br>
 
-## 2. Execute our agent
-For the execution of the code, from the `Autonomous-Software-Agents-Project-SwiftCargoChamp` folder, run the following command:
+## 1. Setting Up the Project Environment
 
+We assume that the server is already running, based on the repository provided by the professor during the course.
 
-### 2.1 Default configuration (config_1.js)
-```node bdi_control_loop.js``` 
+For our part, follow these steps to set up the project environment:
 
+### 1.1 Install npm Packages
 
-### 2.2 Custom configuration (es: config_2.js)
-```node bdi_control_loop.js ./config/config_2.js``` 
+First, install the required dependencies by running the following command:
+
+```sh
+npm install
+```
+
+### 1.2 Configure the Project
+
+The project includes two default configuration files, both located in the `./config` folder.  
+These files contain the `host`, `token`, and `local_solver` settings for the agent.
+
+By default, the project uses an **online solver**, allowing it to be executed at any time (as long as an internet connection is available).  
+Unless otherwise specified, the agent will use the `./config/config_1.js` file.
+
+### 1.3 Setting Up the Local Solver
+
+If you prefer to use a **local solver**, improving the performance of the agent by doing so, set the `local_solver` option to `true` in the configuration file.  
+You can specify the local solver address in the `./PDDL/localSolver.js` file.
+
+We used the **Planutils server**, which is Docker-based. To install it, follow the instructions provided at the following link:  
+[Planutils Server Installation](https://github.com/AI-Planning/planutils/tree/main/environments/server)
+
+<br>
+
+## 2. Running the Agent
+
+To execute the code, navigate to the `Autonomous-Software-Agents-Project-SwiftCargoChamp` folder and run one of the following commands:
+
+### 2.1 Default Configuration (`config_1.js`)
+
+```sh
+node bdi_control_loop.js
+```
+
+### 2.2 Custom Configuration (e.g., `config_2.js`)
+
+```sh
+node bdi_control_loop.js ./config/config_2.js
