@@ -1,7 +1,4 @@
-import fetch from 'node-fetch' // import fetch from 'node-fetch';
-
-//const HOST = process.env.PAAS_HOST || 'https://solver.planning.domains:5001';
-//const PATH = process.env.PAAS_PATH || '/package/dual-bfws-ffparser/solve';
+import fetch from 'node-fetch';
 
 const HOST = 'http://localhost:5555';
 const PATH ='/package/dual-bfws-ffparser/solve';
