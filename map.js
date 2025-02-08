@@ -39,9 +39,13 @@ export class DeliverooMap {
                 this.spawners.push({ x: t.x, y: t.y });
         });
 
-        this.shuffle(this.spawners); //Alrimenti si muove di 1, e ricalcola il piano ogni volta
+        this.shuffle(this.spawners); //Otherwise the spawners are always in the same order, and the agents doesn't explore the whole map
     }
 
+    /**
+     * shuffles an array
+     * @param {[array]} array 
+     */
     shuffle(array) {
         let currentIndex = array.length;
         while (currentIndex != 0) {
@@ -51,13 +55,24 @@ export class DeliverooMap {
         }
     }
 
+    /**
+     * set the configuration
+     * @param {[object]} config 
+     */
     async setConfig(config) {
         this.config = config;
     }
 
+    /**
+     * returns the next spawner to explore
+     * @param {[{id: integer, x: integer, y: integer, intention: list}]} allies 
+     * @param {[integer]} agent_x 
+     * @param {[integer]} agent_y 
+     * @returns {[x: integer, y: integer]}
+     */
     async getSpawner(allies, agent_x, agent_y) {
 
-        if (this.spawners.length == 1) {
+        if (this.spawners.length == 1) { //If there is only one spawner
             let allay_to_spawner = false;
             for (const ally of Object.keys(allies)) {
                 if (allies[ally].intention != undefined && allies[ally].intention.desire == 'explore') {
@@ -67,7 +82,7 @@ export class DeliverooMap {
                 }
             }
 
-            if ((this.spawners[0].x == agent_x && this.spawners[0].y == agent_y) || allay_to_spawner) {
+            if ((this.spawners[0].x == agent_x && this.spawners[0].y == agent_y) || allay_to_spawner) { //If the agent is in the spawner or an ally is going to the spawner, choose a random spot on the map instad of the spawner
                 let x = Math.floor(Math.random() * this.width);
                 let y = Math.floor(Math.random() * this.height);
                 while (this.amap[x][y] != 0) {
@@ -81,10 +96,9 @@ export class DeliverooMap {
 
 
         this.indice_spawners = this.indice_spawners + 1 >= this.spawners.length ? 0 : this.indice_spawners + 1;
+        let spawner = this.spawners[this.indice_spawners]; //Take the next spawner
 
-        let spawner = this.spawners[this.indice_spawners];
-
-        if (allies != {}) {
+        if (allies != {}) { //If there are allies, we consider their intentions to avoid conflicts
             let no_go = [];
 
             for (const ally of Object.keys(allies)) {
@@ -93,22 +107,28 @@ export class DeliverooMap {
                 }
             }
 
-            if (no_go.length > 0) {
-                let max_d = 0;
-                for (let spawn of this.spawners) {
-                    let d = 0
-                    for (let ng of no_go) {
-                        d += this.distance(spawn.x, spawn.y, ng.x, ng.y);
+            if (no_go.length > 0) { //If there are allies exploring, we choose a spawner that is not close to the allies
+                let available_spawners = structuredClone(this.spawners)
+
+                for (let ng of no_go) {
+                    let allies_spawner_x = ng.x;
+                    let allies_spawner_y = ng.y;
+
+                    for (let i = 0; i < available_spawners.length; i++) {
+
+                        if (Math.abs(available_spawners[i].x - allies_spawner_x) + Math.abs(available_spawners[i].y - allies_spawner_y) < this.config.PARCELS_OBSERVATION_DISTANCE) {
+                            available_spawners.splice(i, 1);
+                            i--;
+                        }
                     }
-                    if (d > max_d && spawn.x != agent_x && spawn.y != agent_y) {
-                        max_d = d;
-                        spawner = spawn;
-                    }
+                }
+
+                if (available_spawners.length > 10) {
+                    let random_index = Math.floor(Math.random() * available_spawners.length);
+                    spawner = available_spawners[random_index]; //We choose a random spawner that is not close to the allies
                 }
             }
         }
-        //console.log('------ final spawner', spawner);
-        //console.log("\n\n")
 
         return spawner;
     }
@@ -227,6 +247,10 @@ export class DeliverooMap {
         });
     }
 
+    /**
+     * reutrn the map as a string
+     * @returns {[string]} 
+     */
     toMsg() {
         let msg = passkey + '-map-';
         msg += JSON.stringify({ parcels: this.availableParcels, agents: this.agents });
@@ -373,6 +397,7 @@ export class DeliverooMap {
         while (queue.length > 0) {
             let decay = this.config.PARCEL_DECADING_INTERVAL;
             let rateDecayPacket = decay == 'infinite' ? 0 : 1 / decay.split('s')[0];
+            let agentSpeed = 1000 / this.config.MOVEMENT_DURATION;
             const path = queue.shift();
             const { x: currX, y: currY, mov: curMov } = path[path.length - 1];
 
@@ -380,25 +405,25 @@ export class DeliverooMap {
 
             // Process the current node here
             switch (goal) {
-                case 'D':
+                case 'D': // Delivery
                     if (this.amap[currX][currY] === -1) {
                         return path.filter(element => element.mov !== 's');
                     }
                     break;
-                case 'P':
+                case 'P': // Parcel
                     if (value !== null && value !== -1 && value !== 0 && value !== 1) {
                         if (value in this.availableParcels && this.availableParcels[value].carriedBy === null) {
                             let toD = await this.bfs(currX, currY, 'D');
                             if (toD == undefined)
                                 return undefined;
-                            if ((toD.length + path.length) * rateDecayPacket < this.availableParcels[value].reward) {
+                            if (((toD.length + path.length)/agentSpeed) * rateDecayPacket < this.availableParcels[value].reward) { //If the reward is enough to take the parcel
                                 const newPath = path.concat(toD);
                                 return newPath.filter(element => element.mov !== 's');
                             }
                         }
                     }
                     break;
-                case 'C':
+                case 'C': // Coordinates
                     if (currX == gx && currY == gy) {
                         return path.filter(element => element.mov !== 's');
                     }
@@ -451,6 +476,7 @@ export class DeliverooMap {
         while (queue.length > 0) {
             let decay = this.config.PARCEL_DECADING_INTERVAL;
             let rateDecayPacket = decay == 'infinite' ? 0 : 1 / decay.split('s')[0];
+            let agentSpeed = 1000 / this.config.MOVEMENT_DURATION;
             const path = queue.shift();
             const { x: currX, y: currY } = path[path.length - 1];
 
@@ -461,8 +487,9 @@ export class DeliverooMap {
                     if (toD) {
                         let parcel = this.availableParcels[value]
                         if (parcel != undefined)
-                            if ((toD.length + path.length) * rateDecayPacket < parcel.reward)
-                                options.push([parcel, parcel.reward - (toD.length + path.length) * rateDecayPacket])
+                            if (((toD.length + path.length)/agentSpeed) * rateDecayPacket < parcel.reward){ //If the reward is enough to take the parcel
+                                options.push([parcel, parcel.reward - (((toD.length + path.length)/agentSpeed) * rateDecayPacket)])
+                            }
                     }
                 }
             }
@@ -508,11 +535,14 @@ export class DeliverooMap {
         let p_rewards = [];
         let decay = this.config.PARCEL_DECADING_INTERVAL;
         let rateDecayPacket = decay == 'infinite' ? 0 : 1 / decay.split('s')[0];
+        let agentSpeed = 1000 / this.config.MOVEMENT_DURATION;
+        
         if (!Object.keys(intention_queue).some(k => intention_queue[k].desire == 'go_to_delivery')) {
             if (Object.keys(this.availableParcels).some(k => this.availableParcels[k].carriedBy == id)) {
                 intention_queue.push(new Intention('go_to_delivery'));
             }
         }
+
         for (let i = 0; i < intention_queue.length; i++) {
             let intention = intention_queue[i];
             let desire = intention.desire;
@@ -523,29 +553,30 @@ export class DeliverooMap {
             switch (desire) {
                 case 'go_pick_up':
                     if (this.availableParcels[args.id] !== undefined) {
-                        console.log('go_pick_up', args.id);
                         args = this.availableParcels[args.id];
-                        if (args.carriedBy == null) { //Era (args.carriedBy == id || args.carriedBy == null)
+                        if (args.carriedBy == null) { //If is not carried by anyone
                             let toP = await this.bfs(x, y, 'C', args.x, args.y);
                             let toD = await this.bfs(args.x, args.y, 'D');
                             if (toD && toP) {
-                                if ((toD.length + toP.length) * rateDecayPacket < args.reward) {
-                                    p_rewards.push([intention, args.reward - (toD.length + toP.length) * rateDecayPacket])
+                                if (((toD.length + toP.length)/agentSpeed) * rateDecayPacket < args.reward) { //If the reward is enough to take the parcel
+                                    let parcel_reward = args.reward - (((toD.length + toP.length)/agentSpeed) * rateDecayPacket);
+                                    p_rewards.push([intention, parcel_reward])
                                 }
                             }
                         }
                     }
                     break;
                 case 'go_to_delivery':
+
                     if (me2D) {
-                        carriedReward = carriedReward - carriedParcels.length * me2D.length * rateDecayPacket;
+                        carriedReward = carriedReward - ((carriedParcels.length/agentSpeed) * me2D.length * rateDecayPacket);
                         if (me2D.length * rateDecayPacket < carriedReward) {
-                            if (rateDecayPacket != 0){ //If non esisteva
+                            if (rateDecayPacket != 0){ //If the decay is not infinite
                                 p_rewards.push([intention, carriedReward])
                             }
-                            else //Aggiunta, così prende più pacchetti se il decay è infinito. (ma comunque ad una certa soglia si ferma e li porta a destinazione)   
+                            else 
                             {
-                                p_rewards.push([intention, carriedReward*0.1]) //new also
+                                p_rewards.push([intention, carriedReward*0.1]) //If the decay is infinite, we consider to take more parcels before going to the delivery
                             }
                         }
                     }
@@ -555,16 +586,19 @@ export class DeliverooMap {
                     break;
             }
         }
-
-        p_rewards.sort((a, b) => b[1] - a[1]);
-        console.log(p_rewards.map(([intention, reward]) => intention.desire + ': ' + reward + '; '));
+        p_rewards.sort((a, b) => b[1] - a[1]); //Sort the intentions by reward
         p_rewards = p_rewards.map(([intention, reward]) => intention);
+
         return p_rewards;
     }
 
     /**
-     * reconsider the current intentions
-     * @param {[Agent]} myAgent 
+     * reconsider the current intentions, return the new intentions
+     * @param {[Array]} intention_queue
+     * @param {[integer]} id
+     * @param {[integer]} x
+     * @param {[integer]} y
+     * @returns {[Array]}
      */
     async reconsider(intention_queue, id, x, y) {
         let current_intention = intention_queue[0];
@@ -574,19 +608,17 @@ export class DeliverooMap {
         let desire = current_intention.desire;
         let args = current_intention.args[0];
         let new_intention = await this.filter_intentions(intention_queue, id, x, y);
+        
         if (new_intention.length > 0) {
             if (new_intention[0].desire !== desire) {
-                //console.log('=== reconsidered desire ===');
+                console.log('=== reconsidered desire ===');
                 current_intention.stop();
-                new_intention.shift();
             }
             else if (desire === 'go_pick_up' && new_intention[0].args[0].id !== args.id) {
-                //console.log('=== reconsidered go_pick_up ===');
+                console.log('=== reconsidered go_pick_up ===');
                 current_intention.stop();
-                new_intention.shift();
             }
         }
-        // return new_intention if it is not undefined otherwise return []
         return new_intention || [];
     }
 }

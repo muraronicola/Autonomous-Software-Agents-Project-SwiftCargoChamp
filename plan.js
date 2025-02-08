@@ -3,6 +3,10 @@ import localSolver from "./localSolver.js";
 import fs from 'fs';
 import { Agent } from "./agent.js";
 
+/**
+ * Load the domain file for the PDDL
+ * @param {[string]} path
+*/
 function readFile(path) {
     return new Promise((res, rej) => {
         fs.readFile(path, 'utf8', (err, data) => {
@@ -13,12 +17,14 @@ function readFile(path) {
 }
 const domain = await readFile('./deliveroo_domain.pddl');
 
-
+/**
+ * Load the configuration file
+ * @param {[string]} fileName
+*/
 async function loadConfig(fileName) {
     try {
         // Dynamically import the file
         const config = await import(`./${fileName}`);
-        //console.log('Config loaded:', config.default);
         return config.default;
     } catch (error) {
         console.error('Error loading config:', error);
@@ -26,18 +32,41 @@ async function loadConfig(fileName) {
 }
 
 // use the config file passed as argument if any or the default one
-const config_host = await loadConfig(process.argv[2] || 'config_1.js');
+const config_host = await loadConfig(process.argv[2] || './config/config_1.js');
 
-export class Plan {
+
+
+export class Plan { 
     #stopped = false;
     agent = null;
 
+    /**
+     * Constructor
+     * @param {[object]} agent
+     */
+    constructor(agent) {
+        this.agent = agent;
+    }
+
+    /**
+     * Stop the plan
+     */
     stop() {
         this.#stopped = true;
     }
+
+    /**
+     * Return the status of the plan
+     * @returns {[boolean]}
+     */
     get stopped() {
         return this.#stopped;
     }
+
+    /**
+     * Check if the plan is stopped
+     * @throws {['stopped']}
+     */
     checkStop() {
         if (this.stopped) {
             this.#stopped = false;
@@ -45,10 +74,11 @@ export class Plan {
         }
     }
 
-    constructor(agent) {
-        this.agent = agent;
-    }
-
+    /**
+     * Execute the plan
+     * @param {[object]} myAgent
+     * @param {[object]} p
+     */
     async executePlan(myAgent, p) {
         while (p.length > 0) {
             this.checkStop();
@@ -65,41 +95,60 @@ export class Plan {
     }
 }
 
+
+
 export class GoPickUp extends Plan {
+
+    /**
+     * Check if the plan for going to pick up a parcel is applicable
+     * @param {[string]} desire
+     * @param {[integer]} x
+     * @param {[integer]} y
+     * @param {[object]} allies
+     * @param {[object]} map
+     * @param {[object]} intention_queue
+     * @returns {[boolean]}
+     */
     async isApplicableTo(desire, x, y, allies, map, intention_queue) {
-        if (desire != 'go_pick_up')
+        if (desire != 'go_pick_up') //If the desire is not to go pick up a parcel, return false
             return false;
 
-        for (const ally of Object.keys(allies)) {
+        for (const ally of Object.keys(allies)) { //Check if an ally is already going to pick up the parcel and if it is more convenient for him to do it
             if (allies[ally].intention != null && allies[ally].intention.desire == 'go_pick_up' && desire == 'go_pick_up') {
                 if (allies[ally].intention.args.length <= 0) {
                     continue;
                 }
 
                 let allies_intention_args = allies[ally].intention.args[0]
+
                 if (allies_intention_args.carriedBy != null || intention_queue[0].args[0].id != allies_intention_args.id)
                     continue;
 
                 if (!isNaN(allies[ally].x) && !isNaN(allies[ally].y) && !isNaN(allies_intention_args.x) && !isNaN(allies_intention_args.y)) {
                     let my_plan = await map.bfs(x, y, 'C', allies_intention_args.x, allies_intention_args.y);
                     let allay_plan = await map.bfs(allies[ally].x, allies[ally].y, 'C', allies_intention_args.x, allies_intention_args.y);
-                    if (my_plan.length > allay_plan.length) {
+                    if (my_plan.length > allay_plan.length) { //If the path is longer for the this agent, return false
                         return false
-                    } else {
-                        //console.log("CONTINUO")
-                    }
+                    } 
                 }
             }
         }
+
         return desire == 'go_pick_up';
     }
 
+    /**
+     * Execute the plan for going to pick up a parcel
+     * @param {[object]} myAgent 
+     * @param {[x: integer, y: integer]} { x, y } 
+     * @returns {[boolean]}
+     */
     async execute(myAgent, { x, y }) {
         console.log("Executing [GoPickUp] ------- ")
         this.checkStop();
         let problem = await myAgent.map.PddlGoTo(myAgent.x, myAgent.y, x, y);
-        if (config_host.local_solver)
-            var p = await localSolver(domain, problem)
+        if (config_host.local_solver) 
+            var p = await localSolver(domain, problem);
         else
             var p = await onlineSolver(domain, problem);
         await this.executePlan(myAgent, p);
@@ -108,11 +157,30 @@ export class GoPickUp extends Plan {
     }
 }
 
-export class GoToDelivery extends Plan {
+
+
+
+export class GoToDelivery extends Plan { 
+    /**
+     * Check if the plan for going to delivery is applicable
+     * @param {[string]} desire
+     * @param {[integer]} x
+     * @param {[integer]} y
+     * @param {[object]} allies
+     * @param {[object]} map
+     * @param {[object]} intention_queue
+     * @returns {[boolean]}
+     */
     async isApplicableTo(desire, x, y, allies, map, intention_queue) {
         return desire == 'go_to_delivery';
     }
 
+
+    /**
+     * Execute the plan for going to delivery
+     * @param {[object]} myAgent
+     * @returns {[boolean]}
+     */
     async execute(myAgent) {
         console.log("Executing [GoToDelivery] ------- ")
         this.checkStop();
@@ -128,12 +196,31 @@ export class GoToDelivery extends Plan {
     }
 }
 
+
+
+
 export class Explore extends Plan {
+
+    /**
+     * Check if the plan for going to explore is applicable
+     * @param {[string]} desire
+     * @param {[integer]} x
+     * @param {[integer]} y
+     * @param {[object]} allies
+     * @param {[object]} map
+     * @param {[object]} intention_queue
+     * @returns {[boolean]}
+     */
     async isApplicableTo(desire, x, y, allies, map, intention_queue) {
-        console.log("Testing [Explore] ------- ")
         return desire == 'explore';
     }
 
+    /**
+     * Execute the plan for going to explore
+     * @param {[object]} myAgent
+     * @param {[x: integer, y: integer]} { x, y }
+     * @returns {[boolean]}
+     */
     async execute(myAgent, { x, y }) {
         console.log("Executing [Explore] ------- ")
         this.checkStop();
@@ -142,7 +229,8 @@ export class Explore extends Plan {
             var p = await localSolver(domain, problem)
         else
             var p = await onlineSolver(domain, problem);
-        if (p != null) { // se non c'è un percorso valido
+
+        if (p != null) { //If the plan is valid execute it
             await this.executePlan(myAgent, p);
             await myAgent.client.pickup();
             this.checkStop();
@@ -153,7 +241,13 @@ export class Explore extends Plan {
     }
 }
 
-async function move(myAgent, current) {
+
+/**
+ * Moves the agent to the next position, also picks up and puts down parcels (if needed)
+ * @param {object} myAgent 
+ * @param {object} current 
+ */
+async function move(myAgent, current) { 
     if (myAgent.map.amap[myAgent.x][myAgent.y] == -1) {
         await myAgent.client.putdown();
     }
@@ -165,8 +259,19 @@ async function move(myAgent, current) {
     }
 
     if (! await myAgent.client.move(current.mov)) {
+        if (myAgent.last_position.x != myAgent.x && myAgent.last_position.y != myAgent.y) {
+            myAgent.last_position.x = myAgent.x;
+            myAgent.last_position.y = myAgent.y;
+            myAgent.last_position.time_step = new Date().getTime();
+        }
         throw new Error('move failed');
+
+    } else {
+        myAgent.last_position.x = -1;
+        myAgent.last_position.y = -1;
+        myAgent.last_position.time_step = new Date().getTime();
     }
+
 
     if (current.x != myAgent.x || current.y != myAgent.y) {
         await myAgent.client.putdown();

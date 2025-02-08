@@ -27,7 +27,10 @@ By default, the agent will use the `config_1.js` file.
 
 ### 1.3 Set up the local solver
 If you want to use the local solver, you need to set the `local_solver` to `true` in the configuration file.
-The address for the local solver can be specified in the `localSolver.js` file.
+The address for the local solver can be specified in the `./PDDL/localSolver.js` file.
+<br>
+We used the plantilus server, based on docker. For installation follow the instructions in the following link:
+https://github.com/AI-Planning/planutils/tree/main/environments/server
 
 
 <br>

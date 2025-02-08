@@ -3,9 +3,14 @@ import { DeliverooMap } from "./map.js";
 import { Agent } from "./agent.js";
 import { GoPickUp, GoToDelivery, Explore } from "./plan.js";
 
+
+/**
+ * Load the configuration file
+ * @param {[string]} fileName
+*/
 async function loadConfig(fileName) {
     try {
-        const config = await import(`./${fileName}`);
+        const config = await import(`./${fileName}`); // Dynamically import the file
         return config.default;
     } catch (error) {
         console.error('Error loading config:', error);
@@ -13,8 +18,10 @@ async function loadConfig(fileName) {
 }
 
 // use the config file passed as argument if any or the default one
-const config_host = await loadConfig(process.argv[2] || 'config_1.js');
+const config_host = await loadConfig(process.argv[2] || './config/config_1.js');
 
+
+// Create the DeliverooApi object
 const client = new DeliverooApi(config_host.host, config_host.token)
 client.onConnect(() => console.log("socket", client.socket.id));
 client.onDisconnect(() => console.log("disconnected", client.socket.id));
@@ -24,21 +31,34 @@ client.socket.once('config', (_config) => {
     config = _config;
 });
 
-/**
- * Belief revision function
- */
 const passkey = 'SwiftCargoChamp';
 const myAgent = new Agent(client);
-client.onYou(({ id, name, x, y, score }) => {
+
+
+
+
+/**
+ * Message handling from the server
+ * @param {[object]} parameters
+ * @param {[string]} parameters.id
+ * @param {[string]} parameters.name
+ * @param {[number]} parameters.x
+ * @param {[number]} parameters.y
+ * @param {[number]} parameters.score
+ */
+client.onYou(({ id, name, x, y, score }) => { 
     myAgent.id = id
     myAgent.a_name = name
     myAgent.x = Math.round(x)
     myAgent.y = Math.round(y)
     myAgent.score = score
-
     myAgent.sendToAllies(`${passkey}-ack-${myAgent.x}-${myAgent.y}`);
 })
 
+/**
+ * Agent initialization
+ * @param {[object]} parameters
+ */
 client.socket.once('you', (parameters) => {
     let x = Math.round(parameters.x);
     let y = Math.round(parameters.y);
@@ -46,27 +66,35 @@ client.socket.once('you', (parameters) => {
 });
 
 /**
- * Agent plan library
+ * Agent plan library initialization
  */
 myAgent.plans.push(new GoPickUp())
 myAgent.plans.push(new GoToDelivery())
 myAgent.plans.push(new Explore())
 
 /**
- * Belief and intention initialisation
+ * Belief initialization of the map
+ * @param {[object]} parameters
  */
 client.socket.once('map', (width, height, tiles) => {
     myAgent.map = new DeliverooMap(width, height, tiles)
-    console.log('map', width, height)
 });
 
-client.onAgentsSensing(sensed_agents => {
+/**
+ * The server sends the agents information about the agents
+ * @param {[object]} sensed_agents
+ */
+client.onAgentsSensing(sensed_agents => { 
     if (!myAgent.active)
         return;
 
     myAgent.map.updateAgents(sensed_agents)
 });
 
+/**
+ * The server sends the agents information about the parcels
+ * @param {[object]} parcels
+ */
 client.onParcelsSensing(async (parcels) => {
     if (!myAgent.active)
         return;
@@ -83,12 +111,14 @@ client.onParcelsSensing(async (parcels) => {
 });
 
 /**
- * Message handling
- * Message format: passkey-[action]-[optional_data]
+ * Message handling from an ally
+ * @param {[string]} id
+ * @param {[string]} _
+ * @param {[string]} msg
  */
-client.onMsg(async (id, _, msg) => {
+client.onMsg(async (id, _, msg) => { //There is a message from another agent
     let split = msg.split('-');
-    if (split[0] == passkey) {
+    if (split[0] == passkey) { //Check if the message is from our allies
         switch (split[1]) {
             case 'hello':
                 myAgent.allies[id] = { id: id, x: parseInt(split[2]), y: parseInt(split[3]), intention: null };
@@ -129,25 +159,22 @@ client.onMsg(async (id, _, msg) => {
                         let parcel = intention.args[0];
 
                         if (myAgent.intention_queue.length > 0 && myAgent.intention_queue[0].desire == 'go_pick_up') {
-
+                            
                             if (myAgent.intention_queue[0].args[0].id == parcel.id && parcel.carriedBy == null)
+                                
                                 if (!isNaN(myAgent.allies[id].x) && !isNaN(myAgent.allies[id].y) && !isNaN(parcel.x) && !isNaN(parcel.y)) {
                                     let my_plan = await myAgent.map.bfs(myAgent.x, myAgent.y, 'C', parcel.x, parcel.y);
                                     let allay_plan = await myAgent.map.bfs(myAgent.allies[id].x, myAgent.allies[id].y, 'C', parcel.x, parcel.y);
+                                    
                                     if (my_plan != null && allay_plan != null) {
                                         if (my_plan.length > allay_plan.length) {
                                             myAgent.intention_queue[0].stop();
                                             myAgent.intention_queue.shift();
-                                        } else {
-                                            //console.log("CONTINUO")
                                         }
                                     } else {
                                         if (my_plan == null && allay_plan != null) {
                                             myAgent.intention_queue[0].stop();
                                             myAgent.intention_queue.shift();
-                                        } else if (allay_plan == null && my_plan != null) {
-                                            //console.log("Lui è nullo")
-                                            //console.log("CONTINUO")
                                         }
                                     }
                                 }
@@ -168,19 +195,14 @@ client.onMsg(async (id, _, msg) => {
                                     if (my_plan.length == allay_plan.length) {
                                         myAgent.intention_queue[0].stop();
                                         myAgent.intention_queue.shift();
-                                    } else {
-                                        //console.log("CONTINUO")
                                     }
-                                }else{
-                                    //console.log("CONTINUO")
                                 }
-                            }else{
-                                //console.log("I piani sono nulli.......")
                             }
                         }
                         break;
 
                     case 'explore':
+                        //do nothing, the handling is already done in the map.getSpawner function
                         break;
                 }
                 break;
@@ -188,6 +210,9 @@ client.onMsg(async (id, _, msg) => {
     }
 });
 
+/**
+ * Waits for the map to be loaded
+ */
 async function waitForMap() {
     return new Promise((resolve) => {
         client.onMap(() => {
@@ -196,6 +221,9 @@ async function waitForMap() {
     });
 }
 
+/**
+ * Waits for the sensing of the parcels
+ */
 async function waitForSensingP() {
     return new Promise((resolve) => {
         client.onParcelsSensing(() => {
@@ -204,6 +232,9 @@ async function waitForSensingP() {
     });
 }
 
+/**
+ * Waits for the configuration to be loaded
+ */
 async function waitForConfig() {
     return new Promise((resolve) => {
         client.onConfig(() => {
@@ -212,11 +243,13 @@ async function waitForConfig() {
     });
 }
 
+/**
+ * Initializes the belief of the agent
+ */
 async function initialBelief() {
     await waitForConfig();
     await myAgent.map.setConfig(config);
     await waitForSensingP();
-    //console.log('Belif initialisation done');
 }
 
 await initialBelief();
