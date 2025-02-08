@@ -1,4 +1,4 @@
-import { DeliverooApi } from "./deliverooApi.js";
+import { DeliverooApi } from "./API/deliverooApi.js";
 import { DeliverooMap } from "./map.js";
 import { Agent } from "./agent.js";
 import { GoPickUp, GoToDelivery, Explore } from "./plan.js";

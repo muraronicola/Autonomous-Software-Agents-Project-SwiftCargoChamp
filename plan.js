@@ -1,5 +1,5 @@
 import { onlineSolver } from "@unitn-asa/pddl-client";
-import localSolver from "./localSolver.js";
+import localSolver from "./PDDL/localSolver.js";
 import fs from 'fs';
 
 /**
