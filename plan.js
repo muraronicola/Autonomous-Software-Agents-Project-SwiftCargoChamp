@@ -1,7 +1,6 @@
 import { onlineSolver } from "@unitn-asa/pddl-client";
 import localSolver from "./localSolver.js";
 import fs from 'fs';
-import { Agent } from "./agent.js";
 
 /**
  * Load the domain file for the PDDL
@@ -15,7 +14,7 @@ function readFile(path) {
         })
     })
 }
-const domain = await readFile('./deliveroo_domain.pddl');
+const domain = await readFile('./PDDL/deliveroo_domain.pddl');
 
 /**
  * Load the configuration file

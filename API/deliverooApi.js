@@ -1,8 +1,6 @@
 import { io } from "socket.io-client";
 import EventEmitter from "events";
 import { default as argsParser } from "args-parser";
-import { rejects } from "assert";
-import { exit } from "process";
 export { DeliverooApi };
 
 const args = argsParser(process.argv);

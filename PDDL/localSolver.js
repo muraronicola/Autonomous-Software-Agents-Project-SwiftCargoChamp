@@ -1,4 +1,4 @@
-import fetch from 'node-fetch' // import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 
 const HOST = 'http://localhost:5001';
 const PATH = '/package/dual-bfws-ffparser/solve';
@@ -62,7 +62,6 @@ async function getResult (responseCheckUrl) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            // body: JSON.stringify( {adaptor: "planning_editor_adaptor"} )
         });
 
         if ( res.status != 200 ) {
@@ -78,10 +77,6 @@ async function getResult (responseCheckUrl) {
             break;
 
     }
-
-    // console.log(json);
-    // console.log(json.plans[0].result);
-    // console.log(json.plans[0].result.plan);
 
     if ( json.status != 'ok' ) {
         console.log(json);
